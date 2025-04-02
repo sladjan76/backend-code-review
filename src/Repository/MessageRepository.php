@@ -10,15 +10,15 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Code Review:
  *
- * 1. **Use parameter binding to prevent SQL injection
+ * 1. **Use parameter binding to prevent SQL injection or replace with findBy()
+ *    - Suggested:
+ *          $this->findBy(['status' => $status])
  *    - Suggested:
  *          ->createQuery(
  *              "SELECT m FROM App\Entity\Message m WHERE m.status = :status"
  *          )
  *          ->setParameter('status', $status)
  *
- * 2. **Method name** Instead of `by` use more intuitive name for method.
- *    - Suggested: public function filteredByStatus()
  */
 
 /**
@@ -36,6 +36,29 @@ class MessageRepository extends ServiceEntityRepository
         parent::__construct($registry, Message::class);
     }
 
+//    /**
+//     * Returns messages filtered by status if provided
+//     *
+//     * @return Message[]
+//     */
+//    public function by(Request $request): array
+//    {
+//        $status = $request->query->get('status');
+//
+//        if ($status) {
+//            /** @var Message[] $messages */ // Tell PHPStan that the result will be an array of Message objects
+//            $messages = $this->getEntityManager()
+//                ->createQuery(
+//                    sprintf("SELECT m FROM App\Entity\Message m WHERE m.status = '%s'", $status)
+//                )
+//                ->getResult();
+//        } else {
+//            $messages = $this->findAll();
+//        }
+//
+//        return $messages;
+//    }
+
     /**
      * Returns messages filtered by status if provided
      *
@@ -44,18 +67,11 @@ class MessageRepository extends ServiceEntityRepository
     public function by(Request $request): array
     {
         $status = $request->query->get('status');
-        
+
         if ($status) {
-            /** @var Message[] $messages */ // Tell PHPStan that the result will be an array of Message objects
-            $messages = $this->getEntityManager()
-                ->createQuery(
-                    sprintf("SELECT m FROM App\Entity\Message m WHERE m.status = '%s'", $status)
-                )
-                ->getResult();
-        } else {
-            $messages = $this->findAll();
+            return $this->findBy(['status' => $status]);
         }
-        
-        return $messages;
+
+        return $this->findAll();
     }
 }

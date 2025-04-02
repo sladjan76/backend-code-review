@@ -124,14 +124,20 @@ class MessageController extends AbstractController
          * This fixes PHPStan error: "Parameter #1 $text of class App\Message\SendMessage
          *      constructor expects string, float|int<min, -1>|int<1, max>|string|true given."
          */
-        $text = (string)$request->query->get('text');
+        $text = trim((string)$request->query->get('text'));
         
-        if (!$text) {
-            return new Response('Text is required', 400);
+//        if (!$text) {
+//            return new Response('Text is required', 400);
+//        }
+
+
+        if ($text === '') {
+            return new Response('Text is required', Response::HTTP_BAD_REQUEST);
         }
 
         $bus->dispatch(new SendMessage($text));
         
-        return new Response('Successfully sent', 204);
+//        return new Response('Successfully sent', 204);
+        return new Response('Successfully sent', Response::HTTP_NO_CONTENT);
     }
 }
