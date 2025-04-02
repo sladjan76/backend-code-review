@@ -53,7 +53,7 @@ class MessageControllerTest extends WebTestCase
 
         $messages = [$message1, $message2];
 
-        // Configure the repository mock
+        // Stub method
         $this->messageRepository
             ->expects($this->once())
             ->method('by')
@@ -93,7 +93,7 @@ class MessageControllerTest extends WebTestCase
 
     public function test_list_returns_empty_array_when_no_results(): void
     {
-        // Configure the repository mock to return an empty array
+        // Stub method
         $this->messageRepository
             ->expects($this->once())
             ->method('by')
@@ -118,14 +118,23 @@ class MessageControllerTest extends WebTestCase
 
     public function test_list_with_query_parameters(): void
     {
-        // Expect that the Request object will be passed to the by() method
+        // Create mock message objects
+        $message1 = $this->createMessageObject(
+            '1f00bd14-3434-660c-aeec-6fa761676088',
+            'A message with sent status',
+            'sent'
+        );
+
+        $messages = [$message1];
+
+        // Stub method
         $this->messageRepository
             ->expects($this->once())
             ->method('by')
             ->with($this->callback(function($request) {
                 return $request->query->get('status') === 'sent';
             }))
-            ->willReturn([]);
+            ->willReturn($messages);
 
         // Make the request with query parameters
         $this->client->request(
@@ -133,9 +142,30 @@ class MessageControllerTest extends WebTestCase
             '/messages?status=sent'
         );
 
+        $responseContent = $this->client->getResponse()->getContent();
+
         // Make assertions
         $this->assertEquals(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
+        $this->assertIsString($responseContent);
+
+        /** @var array<string,mixed> $responseData */
+        $responseData = json_decode($responseContent, true);
+        $this->assertIsArray($responseData);
+
+        $this->assertEquals(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
+        $this->assertResponseHeaderSame('Content-Type', 'application/json');
+
+        $this->assertArrayHasKey('messages', $responseData);
+        $this->assertIsArray($responseData['messages']);
+        $this->assertCount(1, $responseData['messages']);
+
+        $this->assertArrayHasKey(0, $responseData['messages']);
+        $this->assertEquals([
+            'uuid' => '1f00bd14-3434-660c-aeec-6fa761676088',
+            'text' => 'A message with sent status',
+            'status' => 'sent',
+        ], $responseData['messages'][0]);
     }
 
     function test_that_it_sends_a_message(): void
